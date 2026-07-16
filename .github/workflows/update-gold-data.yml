@@ -1,0 +1,39 @@
+name: Update Gold Dashboard Data
+
+on:
+  schedule:
+    # 北京时间19:00 = UTC 11:00
+    - cron: '0 11 * * *'
+  workflow_dispatch: {}   # 也支持在 Actions 页面手动点 Run workflow 测试
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests numpy
+
+      - name: Fetch ETA data, compute scores and generate narrative
+        env:
+          ETA_APPID: ${{ secrets.ETA_APPID }}
+          ETA_SECRET: ${{ secrets.ETA_SECRET }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python scripts/update_gold_data.py
+
+      - name: Commit updated data.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add gold-dashboard/data.json
+          git diff --cached --quiet && echo "无数据变化,跳过提交" || git commit -m "chore: 自动刷新黄金看板数据 $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push
