@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>黄金多因子看板 · 弘则研究</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1419;
+    --panel:#161C23;
+    --panel-raised:#1C232B;
+    --hairline:#2A323C;
+    --text:#E8E6E1;
+    --text-dim:#8B93A0;
+    --text-faint:#5B6472;
+    --brass:#C4A06A;
+    --brass-dim:#9C8153;
+    --brick:#B06A5C;
+    --brick-dim:#8A544A;
+    --neutral:#8B93A0;
+    --serif:'Source Serif 4', Georgia, serif;
+    --sans:'IBM Plex Sans', -apple-system, sans-serif;
+    --mono:'IBM Plex Mono', 'SF Mono', monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(15,20,25,0.92);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--hairline);
+    padding:14px 24px;
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:10px;
+  }
+  .brand{display:flex; align-items:baseline; gap:10px;}
+  .brand .mark{
+    font-family:var(--serif); font-weight:600; font-size:19px; letter-spacing:0.01em;
+  }
+  .brand .mark em{font-style:normal; color:var(--brass);}
+  .brand .sub{font-size:11px; color:var(--text-faint); letter-spacing:0.08em; text-transform:uppercase;}
+  .topbar-right{display:flex; align-items:center; gap:16px; font-size:12px; color:var(--text-dim);}
+  .price-tag{font-family:var(--mono); font-size:14px; color:var(--text);}
+  .price-tag .delta{color:var(--brass); font-size:12px; margin-left:6px;}
+  .price-tag .delta.down{color:var(--brick);}
+  .refresh-btn{
+    background:transparent; border:1px solid var(--hairline); color:var(--text-dim);
+    padding:6px 12px; border-radius:3px; font-size:12px; cursor:pointer;
+    font-family:var(--sans); transition:border-color .2s, color .2s;
+  }
+  .refresh-btn:hover{border-color:var(--brass-dim); color:var(--brass);}
+  .refresh-btn:active{transform:translateY(1px);}
+
+  /* ---------- hero ---------- */
+  .hero{
+    padding:56px 24px 40px;
+    max-width:1180px; margin:0 auto;
+  }
+  .hero-label{
+    font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--brass-dim); margin-bottom:10px;
+  }
+  .hero h1{
+    font-family:var(--serif); font-weight:500; font-size:clamp(28px,4vw,42px);
+    letter-spacing:-0.01em; max-width:820px; margin-bottom:14px;
+  }
+  .hero p.lede{
+    color:var(--text-dim); max-width:640px; font-size:15px; margin-bottom:44px;
+  }
+
+  .gauges{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:1px;
+    background:var(--hairline);
+    border:1px solid var(--hairline);
+    border-radius:6px; overflow:hidden;
+  }
+  .gauge-card{
+    background:var(--panel); padding:28px 20px 22px; text-align:center;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .gauge-card .horizon-label{
+    font-size:12px; color:var(--text-dim); letter-spacing:0.06em; margin-bottom:2px;
+  }
+  .gauge-card .horizon-sub{
+    font-size:10.5px; color:var(--text-faint); margin-bottom:14px;
+  }
+  .gauge-svg{width:170px; height:100px;}
+  .gauge-score{
+    font-family:var(--mono); font-size:34px; font-weight:600; margin-top:-38px;
+  }
+  .gauge-verdict{
+    font-size:11.5px; color:var(--text-dim); margin-top:6px; letter-spacing:0.03em;
+  }
+
+  /* ---------- weight note ---------- */
+  .weight-note{
+    max-width:1180px; margin:0 auto; padding:0 24px 48px;
+    font-size:12px; color:var(--text-faint); border-top:1px solid var(--hairline); padding-top:16px;
+  }
+  .weight-note b{color:var(--text-dim); font-weight:500;}
+
+  /* ---------- factor grid ---------- */
+  .section-wrap{max-width:1180px; margin:0 auto; padding:0 24px;}
+  .section-heading{
+    display:flex; align-items:baseline; gap:12px; margin:56px 0 20px;
+  }
+  .section-heading .num{font-family:var(--mono); color:var(--brass-dim); font-size:13px;}
+  .section-heading h2{font-family:var(--serif); font-weight:500; font-size:22px;}
+
+  .factor-grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:1px;
+    background:var(--hairline); border:1px solid var(--hairline); border-radius:6px; overflow:hidden;
+    margin-bottom:8px;
+  }
+  .factor-card{
+    background:var(--panel); padding:22px 20px; cursor:pointer;
+    transition:background .18s;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .factor-card:hover{background:var(--panel-raised);}
+  .factor-card .eyebrow{font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-faint);}
+  .factor-card .fname{font-family:var(--serif); font-size:19px; font-weight:600;}
+  .factor-card .mini-scores{display:flex; gap:14px; margin-top:2px;}
+  .mini-score{display:flex; flex-direction:column; gap:2px;}
+  .mini-score .ms-label{font-size:9.5px; color:var(--text-faint);}
+  .mini-score .ms-val{font-family:var(--mono); font-size:16px;}
+  .factor-card .takeaway{font-size:12.5px; color:var(--text-dim); line-height:1.5; margin-top:2px;}
+
+  .score-hi{color:var(--brass);}
+  .score-mid{color:var(--neutral);}
+  .score-lo{color:var(--brick);}
+
+  /* ---------- detail sections ---------- */
+  .detail{
+    background:var(--panel); border:1px solid var(--hairline); border-radius:6px;
+    padding:32px 28px; margin-bottom:20px; scroll-margin-top:80px;
+  }
+  .detail-head{
+    display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;
+    margin-bottom:22px; padding-bottom:20px; border-bottom:1px solid var(--hairline);
+  }
+  .detail-head .eyebrow{font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--brass-dim); margin-bottom:6px;}
+  .detail-head h3{font-family:var(--serif); font-size:26px; font-weight:600;}
+  .score-row{display:flex; gap:22px;}
+  .score-chip{text-align:center;}
+  .score-chip .sc-h{font-size:10.5px; color:var(--text-faint); letter-spacing:0.04em;}
+  .score-chip .sc-v{font-family:var(--mono); font-size:24px; font-weight:600;}
+
+  .warning-banner{
+    background:rgba(176,106,92,0.1); border:1px solid rgba(176,106,92,0.35);
+    color:#D3A79E; font-size:12.5px; padding:10px 14px; border-radius:4px; margin-bottom:20px;
+  }
+
+  .narrative-grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:22px; margin-bottom:28px;
+  }
+  .narrative-col .nh{
+    font-size:12px; color:var(--text-dim); font-weight:600; letter-spacing:0.02em;
+    margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--hairline);
+  }
+  .narrative-col p{font-size:13px; color:var(--text-dim); line-height:1.75;}
+
+  table.data-table{width:100%; border-collapse:collapse; font-size:13px;}
+  table.data-table th{
+    text-align:left; font-weight:500; color:var(--text-faint); font-size:11px;
+    letter-spacing:0.04em; text-transform:uppercase; padding:8px 10px;
+    border-bottom:1px solid var(--hairline);
+  }
+  table.data-table td{
+    padding:10px 10px; border-bottom:1px solid rgba(42,50,60,0.5); color:var(--text-dim);
+  }
+  table.data-table td.name{color:var(--text); font-weight:500;}
+  table.data-table td.latest{font-family:var(--mono); color:var(--text);}
+  table.data-table tr:last-child td{border-bottom:none;}
+  table.data-table td.src{font-size:11px; color:var(--text-faint); font-family:var(--mono);}
+
+  footer{
+    max-width:1180px; margin:40px auto 0; padding:24px 24px 40px;
+    border-top:1px solid var(--hairline); font-size:11.5px; color:var(--text-faint);
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;
+  }
+
+  @media (max-width:860px){
+    .gauges{grid-template-columns:1fr;}
+    .factor-grid{grid-template-columns:1fr;}
+    .narrative-grid{grid-template-columns:1fr;}
+    .score-row{gap:14px;}
+  }
+
+  ::selection{background:var(--brass-dim); color:#0F1419;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="mark">Au <em>· 黄金多因子看板</em></div>
+    <div class="sub" id="as-of-label">—</div>
+  </div>
+  <div class="topbar-right">
+    <div class="price-tag">COMEX <span id="gold-latest">—</span> <span class="delta" id="gold-delta"></span></div>
+    <button class="refresh-btn" id="refresh-btn">↻ 刷新数据</button>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="hero-label">六因子 · 三时间维度 · 综合展望</div>
+  <h1>美元、利率、ETF、央行购金、波动率、技术面——六条线索，拼出黄金短中期的整体图景。</h1>
+  <p class="lede">评分范围 0–10，分越高越利多黄金，分越低越利空。综合分按下方权重表由六个要素加权得出，权重固定，数据每日 19:00 自动刷新（也可手动刷新）。</p>
+
+  <div class="gauges" id="gauges"></div>
+</div>
+
+<div class="weight-note" id="weight-note"></div>
+
+<div class="section-wrap">
+  <div class="section-heading"><span class="num">01</span><h2>六大要素总览</h2></div>
+  <div class="factor-grid" id="factor-grid"></div>
+</div>
+
+<div class="section-wrap" id="detail-wrap">
+  <div class="section-heading"><span class="num">02</span><h2>逐项展开</h2></div>
+</div>
+
+<footer>
+  <span id="footer-left">数据来源：ETA 研究数据平台、公开市场数据 · 弘则研究内部工具</span>
+  <span id="footer-right">仅供内部研究参考，不构成投资建议</span>
+</footer>
+
+<script id="embedded-data" type="application/json">{
+  "asOf": "2026-07-16",
+  "asOfLabel": "2026年07月16日",
+  "goldPrice": {
+    "latest": 4070.1,
+    "change1d": 11.8,
+    "changePct1d": 0.29
+  },
+  "weights": {
+    "短期": {
+      "usd": 0.175,
+      "rate": 0.175,
+      "etf": 0.175,
+      "cb": 0.0,
+      "vol": 0.175,
+      "ta": 0.3
+    },
+    "中短期": {
+      "usd": 0.2,
+      "rate": 0.2,
+      "etf": 0.2,
+      "cb": 0.0,
+      "vol": 0.2,
+      "ta": 0.2
+    },
+    "中期": {
+      "usd": 0.1667,
+      "rate": 0.1667,
+      "etf": 0.1667,
+      "cb": 0.1667,
+      "vol": 0.1667,
+      "ta": 0.1667
+    }
+  },
+  "composite": {
+    "短期": 5.15,
+    "中短期": 5.4,
+    "中期": 6.06
+  },
+  "factors": {
+    "usd": {
+      "name": "美元指数",
+      "eyebrow": "货币端",
+      "scores": {
+        "短期": 6.53,
+        "中短期": 6.22,
+        "中期": 5.33
+      },
+      "takeaway": "短期走弱信号最一致,中期增长优势与财政赤字互相拉扯",
+      "narrative": {
+        "短期": "最新2天经济惊喜指数断崖式下滑(58→47)叠加2年期利率快速回落8bp,DXY同步走弱——三个信号方向高度一致,指向短期内美元偏弱。",
+        "中短期": "两周窗口下10年期利率其实是先上后下(净值仍+7bp),CFTC空头持仓也在持续回补,说明近2-3周美元走弱的趋势还没有短期那么干净、一致性打折扣。",
+        "中期": "美欧PMI之差从4月低点持续修复,美国相对欧洲的增长优势并未实质性走弱,这是美元的支撑项;但财政赤字近一个月大幅走阔且明显偏离近半年均值(z=+1.61),重新点燃美元信用的结构性空头叙事。两者相互抵消,中期方向不算清晰。"
+      },
+      "indicators": [
+        {
+          "name": "美元指数(DXY)",
+          "latest": "100.51",
+          "unit": "",
+          "change": "近3日-0.45%,近2周-0.35%",
+          "chartId": "C000022328/28796/2428/28933/36987"
+        },
+        {
+          "name": "美2年期国债收益率",
+          "latest": "4.13%",
+          "unit": "",
+          "change": "近2周-4bp,近3日-8bp",
+          "chartId": "C000022328"
+        },
+        {
+          "name": "美10年期国债收益率",
+          "latest": "4.55%",
+          "unit": "",
+          "change": "近2周+7bp,近3日-1bp",
+          "chartId": "C000022328"
+        },
+        {
+          "name": "美国经济惊喜指数",
+          "latest": "47.4",
+          "unit": "",
+          "change": "近2周-10.4,近2日骤降7.6",
+          "chartId": "C000028796"
+        },
+        {
+          "name": "美欧制造业PMI之差",
+          "latest": "1.9",
+          "unit": "",
+          "change": "较4月低点(0.5)持续修复",
+          "chartId": "C000002428"
+        },
+        {
+          "name": "美财政赤字12MMA",
+          "latest": "1503.8亿美元",
+          "unit": "",
+          "change": "环比+122.8亿,z=+1.61(偏离半年均值)",
+          "chartId": "C000028933"
+        },
+        {
+          "name": "CFTC美元空头持仓(资管)",
+          "latest": "2110手",
+          "unit": "",
+          "change": "z=-0.11(处均值附近),近4周持续收窄",
+          "chartId": "C000036987"
+        }
+      ]
+    },
+    "rate": {
+      "name": "利率",
+      "eyebrow": "机会成本端",
+      "scores": {
+        "短期": 6.14,
+        "中短期": 5.01,
+        "中期": 6.44
+      },
+      "takeaway": "短中期均偏多,中短期是过渡期确定性最低的一档",
+      "narrative": {
+        "短期": "经济惊喜指数最近2天断崖式回落,2年期利率同步快速下行(3日-8bp),叠加油价刚从双顶回落——三个信号方向高度一致,指向短期利率(尤其短端)有下行动能。",
+        "中短期": "拉长到两周看信号打架:10年期利率净值仍是+7bp、期限利差走阔更像是短端抢跑降息预期、长端还没跟上的过渡状态,CPI也仍处于偏高水平(3.5%,高于10个月均值)。趋势确立度不如短期强。",
+        "中期": "7月美债发行量断崖式下降(z=-2.93,历史罕见的收缩幅度),显著缓解长端供给压力;油价双顶回落,按弘则油价领先利率15天框架,未来1-2个月利率大概率跟随震荡下行。CPI虽仍偏高但已从5月峰值回落,通胀预期完全平稳、无失锚风险。中期利率下行的确定性其实比中短期更高。"
+      },
+      "indicators": [
+        {
+          "name": "美2年期收益率",
+          "latest": "4.13%",
+          "unit": "",
+          "change": "近2周-4bp,近3日-8bp",
+          "chartId": "C000046159"
+        },
+        {
+          "name": "美10年期收益率",
+          "latest": "4.55%",
+          "unit": "",
+          "change": "近2周+7bp,近3日-1bp",
+          "chartId": "C000022056"
+        },
+        {
+          "name": "10Y-2Y期限利差",
+          "latest": "0.42",
+          "unit": "",
+          "change": "近2周+11bp",
+          "chartId": "C000036436"
+        },
+        {
+          "name": "美国经济惊喜指数",
+          "latest": "47.4",
+          "unit": "",
+          "change": "近2周-10.4,近2日暴跌7.6",
+          "chartId": "C000022056"
+        },
+        {
+          "name": "CPI同比",
+          "latest": "3.5%",
+          "unit": "",
+          "change": "5月峰值4.2%回落,z=+0.72(仍高于10月均值)",
+          "chartId": "C000046159"
+        },
+        {
+          "name": "10年期通胀预期",
+          "latest": "2.23%",
+          "unit": "",
+          "change": "近2周几乎零变化,完全锚定",
+          "chartId": "C000032565/46160"
+        },
+        {
+          "name": "美债月度发行量(3MMA)",
+          "latest": "190.3亿美元",
+          "unit": "",
+          "change": "7月环比-27.1%,z=-2.93(远低于10月均值)",
+          "chartId": "C000036664"
+        },
+        {
+          "name": "WTI原油",
+          "latest": "71.81",
+          "unit": "$/桶",
+          "change": "7/8双顶(74.76)后回落-2.95",
+          "chartId": "C000019592"
+        }
+      ]
+    },
+    "etf": {
+      "name": "ETF",
+      "eyebrow": "资金流端",
+      "scores": {
+        "短期": 3.41,
+        "中短期": 4.79,
+        "中期": 6.5
+      },
+      "takeaway": "短期有流出扰动,中期结构性配置逻辑更强",
+      "narrative": {
+        "短期": "最近3天两大旗舰ETF(iShares、SPDR)和全口径总持仓都同步下降,金价同期也跌了1.5%——这是本周利率一度冲高、叠加非农数据超预期引发的阶段性资金流出。但利率短期已在掉头向下,这波outflow更像是滞后反应而非新趋势起点。",
+        "中短期": "拉长到两周看,全口径ETF总持仓其实基本走平(+0.02%,统计意义上是噪音),即便iShares、SPDR这两个旗舰基金出现净流出,幅度也相对温和——这次利率上行期间的outflow幅度明显小于过去利率下行周期里的inflow幅度,买盘依然有韧性。",
+        "中期": "弘则3.0阶段逻辑:2026年以来ETF在利率并未明显下行的背景下依然维持增持趋势,购金行为已与传统的短端利率驱动部分脱钩,转向更结构性的发达国家资产再配置逻辑(叠加央行购金这条更长期主线)。这个中期叙事相对独立于短期流量波动,是相对更确定的看多逻辑。"
+      },
+      "indicators": [
+        {
+          "name": "全球已知ETF黄金总持仓",
+          "latest": "9643.1万盎司",
+          "unit": "",
+          "change": "近2周+0.017%(噪音级别),近3日-14.08万盎司",
+          "chartId": "C000043021"
+        },
+        {
+          "name": "iShares黄金ETF持仓",
+          "latest": "461.74吨",
+          "unit": "",
+          "change": "近2周-0.56%,趋势线为负",
+          "chartId": "C000036366"
+        },
+        {
+          "name": "SPDR黄金ETF持仓",
+          "latest": "1001.88吨",
+          "unit": "",
+          "change": "近2周-0.35%,近3日-0.57吨",
+          "chartId": "C000036366"
+        },
+        {
+          "name": "ETF持仓变动 vs 2Y利率变动相关性",
+          "latest": "+0.32",
+          "unit": "",
+          "change": "正相关但不算强",
+          "chartId": "C000043021"
+        }
+      ]
+    },
+    "cb": {
+      "name": "央行购金",
+      "eyebrow": "官方部门",
+      "scores": {
+        "短期": 6.79,
+        "中短期": 6.79,
+        "中期": 6.79
+      },
+      "takeaway": "低频结构性支撑,中国央行购金显著加速",
+      "onlyMediumTerm": true,
+      "narrative": {
+        "短期": "数据频率为月度/季度,过去1-3周内没有新的官方购金数据发布。当前状态即最新一期数据——中国央行6月单月增持48万盎司,创近期新高,状态偏多,但这不是真正的短期动量信号,只是最新数据点的延续。",
+        "中短期": "与短期共用同一个状态,同样是数据延续而非趋势变化,不构成新增信息。",
+        "中期": "中国央行近3个月月均增持35.3万盎司,较此前6个月月均5.3万盎司加速6.6倍,是非常强的结构性买盘信号。全球央行整体购金节奏最近4个季度均值(214.2吨)低于此前4个季度(254.0吨),边际放缓,但中国的加速大概率能部分抵消这个放缓。综合看,中期这条线大概率仍是黄金最稳定的底部支撑力量之一。"
+      },
+      "indicators": [
+        {
+          "name": "中国央行黄金储备(月度)",
+          "latest": "7544万盎司",
+          "unit": "",
+          "change": "近3月月均+35.3万盎司,较前6月(+5.3万盎司/月)加速6.6倍",
+          "chartId": "C000036590"
+        },
+        {
+          "name": "全球央行黄金储备变化(季度)",
+          "latest": "243.66吨",
+          "unit": "",
+          "change": "2026Q1环比+36吨,z=+0.06(处于均值附近)",
+          "chartId": "C000036481"
+        },
+        {
+          "name": "全球央行购金节奏(多季度对比)",
+          "latest": "近4季均值214.2吨",
+          "unit": "",
+          "change": "低于此前4季均值254.0吨,中期节奏放缓",
+          "chartId": "C000023468"
+        }
+      ]
+    },
+    "vol": {
+      "name": "波动率",
+      "eyebrow": "情绪端",
+      "scores": {
+        "短期": 4.34,
+        "中短期": 5.74,
+        "中期": 5.82
+      },
+      "takeaway": "实际数据与既定叙事出现背离,需谨慎解读",
+      "warning": "图表文字解读与最近10天实际数据方向相反,已按实际数据判断",
+      "narrative": {
+        "短期": "相关性由正转负、价格偏离趋势加速恶化这两个最新鲜的信号都指向短期偏空,GVZ虽然近3天小幅回升(23.95→24.88)但幅度有限。波动率结构更像是恐慌型而非多头亢奋型。",
+        "中短期": "GVZ绝对水平是往下走的(-2.24,整体在降温),跟一季度暴涨暴跌后波动率高位回落、趋于稳定吻合,这对价格企稳是有利前置条件。但相关性由正转负这个结构性变化仍是需要留意的减分项,两者相互抵消。",
+        "中期": "波动率企稳→情绪面平稳→为后续方向选择积累动能,这套逻辑应叠加在央行购金、ETF这两条中期主线的底仓之上。只要相关性转负和价格加速偏离趋势这两个警讯不进一步恶化,波动率对黄金整体不构成趋势性拖累,更多是短期扰动。"
+      },
+      "indicators": [
+        {
+          "name": "黄金VIX(GVZ)",
+          "latest": "24.88",
+          "unit": "",
+          "change": "近2周-2.24,近3日+0.93(低点回升)",
+          "chartId": "C000036726"
+        },
+        {
+          "name": "金价与GVZ 90天滚动相关性",
+          "latest": "-0.05",
+          "unit": "",
+          "change": "10天内由+0.15转负,由正转负",
+          "chartId": "C000042106"
+        },
+        {
+          "name": "金价偏离趋势项(Non-Trend/F0.02)",
+          "latest": "-526.8",
+          "unit": "",
+          "change": "近2周-41.8,近3日加速恶化-65.6,z=-1.07",
+          "chartId": "C000040679"
+        }
+      ]
+    },
+    "ta": {
+      "name": "技术分析",
+      "eyebrow": "价格行为端",
+      "scores": {
+        "短期": 5.24,
+        "中短期": 5.26,
+        "中期": 5.46
+      },
+      "takeaway": "短期动能修复,中期空头排列仍在加深",
+      "narrative": {
+        "短期": "MACD柱状图连续2天走高、RSI从超卖边缘(36)回升到42.7,短期动能确实在修复;但COT净多头最新一周出现2个月来的首次回落,说明投机资金也开始有获利了结的迹象,两者稍微打架,综合偏向弱反弹但有支撑。",
+        "中短期": "MACD两条线仍在零轴下方(中期趋势没有真正扭转),RSI仍低于50,价格在20日区间(3982-4224)中部游走没有突破方向,COT净多头虽然绝对水平仍偏高但近4周斜率已明显放缓。多个指标都指向盘整、方向未明。",
+        "中期": "MA20-MA60的空头缺口不仅没收敛反而在扩大(10天前-251→现在-284),60日区间从高点4736跌到低点3982,跌幅超15%,是还在延续、没有被证伪的中期下降趋势。COT净多头的中期累积(+20%)是唯一正面证据,但权重上让位于价格结构本身。"
+      },
+      "indicators": [
+        {
+          "name": "RSI(14)",
+          "latest": "42.72",
+          "unit": "",
+          "change": "较前低36.07回升,未到超卖(<30)",
+          "chartId": "C000045793(计算)"
+        },
+        {
+          "name": "MACD(12,26,9)",
+          "latest": "DIF -66.5 / DEA -79.0",
+          "unit": "",
+          "change": "柱状图+12.48且连续2日走高,但两线仍在零轴下方",
+          "chartId": "C000045793(计算)"
+        },
+        {
+          "name": "布林带(20,2) %B",
+          "latest": "0.44",
+          "unit": "",
+          "change": "价格处中轨下方偏中性位置",
+          "chartId": "C000045793(计算)"
+        },
+        {
+          "name": "支撑阻力/整数关口",
+          "latest": "支撑4000 / 阻力4100",
+          "unit": "",
+          "change": "20日区间3982-4224,目前卡在两关口之间",
+          "chartId": "C000045793(计算)"
+        },
+        {
+          "name": "MA20 vs MA60",
+          "latest": "-283.7",
+          "unit": "",
+          "change": "10天前-251.4,空头缺口扩大",
+          "chartId": "C000045793"
+        },
+        {
+          "name": "COMEX黄金投机净多头(COT)",
+          "latest": "114854手",
+          "unit": "",
+          "change": "近2月+20%(z=+1.07),最新一周首次回落-1963手",
+          "chartId": "C000011395"
+        }
+      ]
+    }
+  }
+}</script>
+
+<script>
+const FACTOR_ORDER = ["usd","rate","etf","cb","vol","ta"];
+const FACTOR_KEY_LABEL = { usd:"美元指数", rate:"利率", etf:"ETF", cb:"央行购金", vol:"波动率", ta:"技术分析" };
+const HORIZONS = ["短期","中短期","中期"];
+const HORIZON_SUB = { "短期":"1周", "中短期":"2-3周", "中期":"2-3个月" };
+
+let DATA = null;
+
+// 部署 Cloudflare Worker 后,把下面这个 URL 换成实际地址,
+// 手动刷新按钮就会先触发 GitHub Actions 重新拉数据,再读取 data.json。
+// 部署前留空即可,此时刷新按钮只会重新读取当前的 data.json。
+const TRIGGER_WORKER_URL = "";
+
+function scoreClass(v){
+  if(v >= 6.5) return "score-hi";
+  if(v >= 4.5) return "score-mid";
+  return "score-lo";
+}
+function scoreColor(v){
+  if(v >= 6.5) return "#C4A06A";
+  if(v >= 4.5) return "#8B93A0";
+  return "#B06A5C";
+}
+function verdictText(v){
+  if(v >= 7) return "偏多";
+  if(v >= 5.5) return "中性偏多";
+  if(v >= 4.5) return "中性";
+  if(v >= 3) return "中性偏空";
+  return "偏空";
+}
+
+function makeGaugeSVG(score, color){
+  // semicircle gauge, 0-10 mapped to -90deg..+90deg
+  const angle = -90 + (score/10)*180;
+  const rad = angle * Math.PI/180;
+  const cx=85, cy=88, r=68;
+  const needleX = cx + r*0.82*Math.sin(rad);
+  const needleY = cy - r*0.82*Math.cos(rad);
+  // arc path (background track), semicircle from -90 to +90
+  const startX = cx + r*Math.sin(-Math.PI/2), startY = cy - r*Math.cos(-Math.PI/2);
+  const endX = cx + r*Math.sin(Math.PI/2), endY = cy - r*Math.cos(Math.PI/2);
+  // progress arc
+  const progEndX = cx + r*Math.sin(rad), progEndY = cy - r*Math.cos(rad);
+  const largeArc = (angle - (-90)) > 180 ? 1 : 0;
+  return `
+  <svg class="gauge-svg" viewBox="0 0 170 100">
+    <path d="M ${startX} ${startY} A ${r} ${r} 0 0 1 ${endX} ${endY}" fill="none" stroke="#2A323C" stroke-width="9" stroke-linecap="round"/>
+    <path d="M ${startX} ${startY} A ${r} ${r} 0 ${largeArc} 1 ${progEndX} ${progEndY}" fill="none" stroke="${color}" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="${cx}" cy="${cy}" r="4" fill="${color}"/>
+    <line x1="${cx}" y1="${cy}" x2="${needleX}" y2="${needleY}" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function render(){
+  document.getElementById('as-of-label').textContent = DATA.asOfLabel + ' 更新';
+  document.getElementById('gold-latest').textContent = '$' + DATA.goldPrice.latest.toFixed(1);
+  const dEl = document.getElementById('gold-delta');
+  const up = DATA.goldPrice.change1d >= 0;
+  dEl.textContent = (up?'+':'') + DATA.goldPrice.change1d.toFixed(1) + ' (' + (up?'+':'') + DATA.goldPrice.changePct1d.toFixed(2) + '%)';
+  dEl.className = 'delta' + (up ? '' : ' down');
+
+  // gauges
+  const gaugesEl = document.getElementById('gauges');
+  gaugesEl.innerHTML = HORIZONS.map(h=>{
+    const v = DATA.composite[h];
+    const color = scoreColor(v);
+    return `<div class="gauge-card">
+      <div class="horizon-label">${h}</div>
+      <div class="horizon-sub">${HORIZON_SUB[h]}</div>
+      ${makeGaugeSVG(v,color)}
+      <div class="gauge-score" style="color:${color}">${v.toFixed(2)}</div>
+      <div class="gauge-verdict">${verdictText(v)}</div>
+    </div>`;
+  }).join('');
+
+  // weight note
+  const w = DATA.weights;
+  document.getElementById('weight-note').innerHTML = `<b>权重说明：</b> 短期权重技术分析占30%（其余四项各17.5%，央行购金不参与）；中短期五项均分各20%（央行购金不参与）；中期六项均分各16.7%。央行购金数据频率为月/季度，仅在中期维度计入综合分。`;
+
+  // factor grid
+  const gridEl = document.getElementById('factor-grid');
+  gridEl.innerHTML = FACTOR_ORDER.map(key=>{
+    const f = DATA.factors[key];
+    const miniScores = HORIZONS.map(h=>{
+      const v = f.scores[h];
+      const disabled = f.onlyMediumTerm && h!=="中期";
+      return `<div class="mini-score">
+        <div class="ms-label">${h}</div>
+        <div class="ms-val ${disabled?'':scoreClass(v)}" style="${disabled?'color:#4A5058':''}">${disabled ? '—' : v.toFixed(1)}</div>
+      </div>`;
+    }).join('');
+    return `<div class="factor-card" onclick="document.getElementById('detail-${key}').scrollIntoView()">
+      <div class="eyebrow">${f.eyebrow}</div>
+      <div class="fname">${f.name}</div>
+      <div class="mini-scores">${miniScores}</div>
+      <div class="takeaway">${f.takeaway}</div>
+    </div>`;
+  }).join('');
+
+  // detail sections
+  const detailWrap = document.getElementById('detail-wrap');
+  // remove old details if re-rendering
+  document.querySelectorAll('.detail').forEach(el=>el.remove());
+  FACTOR_ORDER.forEach((key, idx)=>{
+    const f = DATA.factors[key];
+    const el = document.createElement('div');
+    el.className = 'detail';
+    el.id = 'detail-'+key;
+
+    const scoreChips = HORIZONS.map(h=>{
+      const v = f.scores[h];
+      const disabled = f.onlyMediumTerm && h!=="中期";
+      return `<div class="score-chip">
+        <div class="sc-h">${h}<br>${HORIZON_SUB[h]}</div>
+        <div class="sc-v ${disabled?'':scoreClass(v)}" style="${disabled?'color:#4A5058':''}">${disabled?'—':v.toFixed(1)}</div>
+      </div>`;
+    }).join('');
+
+    const warningHtml = f.warning ? `<div class="warning-banner">⚠ ${f.warning}</div>` : '';
+
+    const narrativeHtml = HORIZONS.map(h=>{
+      return `<div class="narrative-col">
+        <div class="nh">${h}（${HORIZON_SUB[h]}）</div>
+        <p>${f.narrative[h]}</p>
+      </div>`;
+    }).join('');
+
+    const tableRows = f.indicators.map(ind=>{
+      return `<tr>
+        <td class="name">${ind.name}</td>
+        <td class="latest">${ind.latest}${ind.unit?' '+ind.unit:''}</td>
+        <td>${ind.change}</td>
+        <td class="src">${ind.chartId||''}</td>
+      </tr>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="detail-head">
+        <div>
+          <div class="eyebrow">${f.eyebrow}</div>
+          <h3>${String(idx+1).padStart(2,'0')} · ${f.name}</h3>
+        </div>
+        <div class="score-row">${scoreChips}</div>
+      </div>
+      ${warningHtml}
+      <div class="narrative-grid">${narrativeHtml}</div>
+      <table class="data-table">
+        <thead><tr><th>指标</th><th>最新值</th><th>变化 / 解读</th><th>来源图表</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    `;
+    detailWrap.appendChild(el);
+  });
+}
+
+function loadEmbedded(){
+  DATA = JSON.parse(document.getElementById('embedded-data').textContent);
+  render();
+}
+
+async function tryFetchLive(triggeredByUser){
+  const btn = document.getElementById('refresh-btn');
+  const orig = btn.textContent;
+
+  // 用户主动点击、且已配置 Worker 地址时,先触发后台重新抓取
+  if(triggeredByUser && TRIGGER_WORKER_URL){
+    btn.textContent = '↻ 正在触发刷新…';
+    try{
+      await fetch(TRIGGER_WORKER_URL, {method:'GET'});
+      btn.textContent = '✓ 已触发,1-2分钟后生效';
+      setTimeout(()=>{ btn.textContent = orig; }, 3000);
+      return; // 不用等 GitHub Actions 跑完,数据要稍后才会更新
+    }catch(e){
+      // 触发失败就退化成普通的 data.json 读取
+    }
+  }
+
+  btn.textContent = '↻ 刷新中…';
+  try{
+    const res = await fetch('data.json?t=' + Date.now(), {cache:'no-store'});
+    if(!res.ok) throw new Error('no data.json');
+    const json = await res.json();
+    DATA = json;
+    render();
+    btn.textContent = '✓ 已更新';
+  }catch(e){
+    btn.textContent = triggeredByUser ? '当前为最新快照' : orig;
+  }
+  if(triggeredByUser) setTimeout(()=>{ btn.textContent = orig; }, 2200);
+}
+
+document.getElementById('refresh-btn').addEventListener('click', ()=>tryFetchLive(true));
+
+loadEmbedded();
+// attempt a silent live fetch on load in case data.json sits alongside this file with newer data
+tryFetchLive(false);
+</script>
+
+</body>
+</html>
