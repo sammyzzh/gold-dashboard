@@ -34,6 +34,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add gold-dashboard/data.json
+          git add data.json
           git diff --cached --quiet && echo "无数据变化,跳过提交" || git commit -m "chore: 自动刷新黄金看板数据 $(date -u +'%Y-%m-%d %H:%M UTC')"
           git push
