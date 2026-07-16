@@ -27,7 +27,7 @@ import numpy as np
 import requests
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_PATH = os.path.join(REPO_ROOT, "gold-dashboard", "data.json")
+DATA_PATH = os.path.join(REPO_ROOT, "data.json")
 
 ETA_APPID = os.environ.get("ETA_APPID", "")
 ETA_SECRET = os.environ.get("ETA_SECRET", "")
